@@ -1,0 +1,92 @@
+// exercise 1
+
+// packages
+
+// imports
+import dk.dtu.droolsui.*;
+
+// globals
+
+// functions
+
+// queries
+query "value" (String name, double num)
+	s: String( this contains name, ! s.replaceAll("[^0-9.]","").isEmpty)
+	num := Double () from Double.parseDouble(s.replaceAll("[^0-9.]",""))
+end
+
+// rules
+rule "Detect low pressure"
+when
+	s: String( toLowerCase contains "pressure")
+	value(s, p;)
+	eval (p < 2250)
+then
+	String f = new String("low pressure");
+	insertLogical(f);
+	Printer.print (f + " detected ("+p+")");
+    [low_pressure]
+end 
+
+rule "Detect low temperature"
+when
+	s: String( toLowerCase contains "temperature")
+	value(s, t;)
+	eval (t < 622)
+then
+	String f = new String("low temperature");
+	insertLogical(f);
+	Printer.print (f + " detected ("+t+")");
+    (low_temperature)
+end
+
+rule "temperature control"
+    when 
+        [low_pressure] & 
+        (low_temperature)
+    then
+        [fault_in_temperature_control]
+end
+
+rule "heater"
+    when 
+        [fault_in_temperature_control] &
+        (proportional_heater_off)
+    then
+        [heater_defective]
+        String f = new String("heater defective");
+	    insertLogical(f);
+	    Printer.print (f);
+end
+
+rule "spray valve"
+    when    
+        [fault_in_temperature_control] &
+        (spray_valve_open)
+    then
+        [spray_valve_stuck_open]
+end
+
+rule "coolant level"
+    when
+        [low_pressure] &
+        (loss_of_coolant)
+    then
+        [leakage_of_coolant]
+end
+
+rule "safety valves"
+    when
+        [leakage_of_coolant] &
+        !(safety_valves_closed)
+    then
+        [leaking_through_safety_valves]
+end
+
+rule "relief valves"
+    when
+        [leakage_of_coolant] &
+        !(relief_valves_closed)
+    then
+        [leaking_through_relief_valves]
+end
